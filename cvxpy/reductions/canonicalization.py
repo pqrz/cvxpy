@@ -58,6 +58,11 @@ class Canonicalization(Reduction):
 
         canon_objective, canon_constraints = self.canonicalize_tree(
             problem.objective)
+        #####------------ CHANGE START ------------#####
+        if canon_constraints:
+            canon_constraints_id_list = [(canon_constraint_i.id, canon_constraint_i.size) for canon_constraint_i in canon_constraints]   # Preserving both id and size to handle matrix constraints / avoid any information loss
+            inverse_data.cons_id_map.update({-1: canon_constraints_id_list})   # Note: -1 represents objective expression
+        #####------------ CHANGE END ------------#####
 
         for constraint in problem.constraints:
             # canon_constr is the constraint rexpressed in terms of
@@ -67,7 +72,14 @@ class Canonicalization(Reduction):
             canon_constr, aux_constr = self.canonicalize_tree(
                 constraint)
             canon_constraints += aux_constr + [canon_constr]
-            inverse_data.cons_id_map.update({constraint.id: canon_constr.id})
+            #####------------ CHANGE START ------------#####
+            # inverse_data.cons_id_map.update({constraint.id: canon_constr.id})
+            if aux_constr:
+                new_cons_id_list  = [(constr_i.id, constr_i.size) for constr_i in (aux_constr + [canon_constr])]
+                inverse_data.cons_id_map.update({constraint.id: new_cons_id_list})
+            else:
+                inverse_data.cons_id_map.update({constraint.id: canon_constr.id})
+            #####------------ CHANGE END ------------##### 
 
         new_problem = problems.problem.Problem(canon_objective,
                                                canon_constraints)
